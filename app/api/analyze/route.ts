@@ -1,20 +1,13 @@
-import { NextResponse } from "next/server"
-import OpenAI from "openai"
+import OpenAI from "openai";
+import { NextResponse } from "next/server";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 export async function POST(req: Request) {
   try {
-    const { image } = await req.json()
-
-    if (!image) {
-      return NextResponse.json(
-        { error: "No image provided" },
-        { status: 400 }
-      )
-    }
+    const { image } = await req.json();
 
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
@@ -22,7 +15,10 @@ export async function POST(req: Request) {
         {
           role: "user",
           content: [
-            { type: "input_text", text: "Give structured design feedback." },
+            {
+              type: "input_text",
+              text: "Give structured design feedback. Be concise.",
+            },
             {
               type: "input_image",
               image_url: image,
@@ -30,17 +26,16 @@ export async function POST(req: Request) {
           ],
         },
       ],
-    })
+    });
 
-    const result =
-      response.output_text || "No response generated."
-
-    return NextResponse.json({ result })
+    return NextResponse.json({
+      result: response.output_text,
+    });
   } catch (error) {
-    console.error("API ERROR:", error)
+    console.error(error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { result: "AI connection error." },
       { status: 500 }
-    )
+    );
   }
 }
