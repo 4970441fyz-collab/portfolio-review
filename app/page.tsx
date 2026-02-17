@@ -86,17 +86,27 @@ function UploadSection() {
 
   const handleAnalyze = async () => {
     if (!image) return;
-
+  
     setIsLoading(true);
     setResult(null);
-
-    // имитация запроса к AI
-    setTimeout(() => {
+  
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image }),
+      });
+  
+      const data = await response.json();
+  
+      setResult(data.result);
+    } catch (error) {
+      setResult("Analysis failed.");
+    } finally {
       setIsLoading(false);
-      setResult(
-        "Strong visual hierarchy. Improve spacing consistency and increase contrast in secondary text."
-      );
-    }, 2000);
+    }
   };
 
   return (
