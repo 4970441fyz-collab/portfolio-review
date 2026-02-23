@@ -85,30 +85,32 @@ function UploadSection() {
   };
 
   const handleAnalyze = async () => {
-    if (!image) return;
-  
-    setIsLoading(true);
-    setResult(null);
-  
     try {
+      setResult("Analyzing...");
+  
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify({
+          text: "Review this portfolio homepage structure",
+        }),
       });
   
-      const data = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Request failed");
+      }
   
+      const data = await response.json();
       setResult(data.result);
-    } catch (error) {
-      setResult("Analysis failed.");
-    } finally {
-      setIsLoading(false);
+    } catch (error: any) {
+      console.error(error);
+      setResult("Analysis failed: " + error.message);
     }
   };
-
+  
   return (
     <section className="px-6 py-24 border-t border-white/10 bg-neutral-950">
       <div className="max-w-4xl mx-auto text-center">
