@@ -1,45 +1,33 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: Request) {
-  try {
-    const { text } = await req.json();
+  const { text } = await req.json();
 
-    if (!text) {
-      return NextResponse.json(
-        { error: "No text provided" },
-        { status: 400 }
-      );
-    }
+  return NextResponse.json({
+    result: `
+1. Visual Hierarchy  
+Strong hero section. CTA is visible but secondary actions compete visually.
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are a senior product design reviewer.",
-        },
-        {
-          role: "user",
-          content: `Give structured UX feedback for this portfolio:\n\n${text}`,
-        },
-      ],
-    });
+2. Layout & Spacing  
+Good overall structure. Inconsistent vertical rhythm between sections.
 
-    return NextResponse.json({
-      result: response.choices[0].message.content,
-    });
-  } catch (error: any) {
-    console.error("OPENAI ERROR:", error);
-    return NextResponse.json(
-      { error: error.message || "OpenAI request failed" },
-      { status: 500 }
-    );
-  }
+3. Typography  
+Clear hierarchy in headings. Body text contrast could be improved.
+
+4. Color & Contrast  
+Primary gradient works well. Accessibility contrast needs refinement.
+
+5. UX & Clarity  
+Navigation is intuitive. Upload / action flow lacks feedback state.
+
+6. Strengths  
+Strong positioning and clear value proposition.
+
+7. Areas for Improvement  
+Refine spacing system and improve visual consistency.
+
+8. Overall Level  
+Mid-level portfolio with solid structure and potential polish.
+`,
+  });
 }
