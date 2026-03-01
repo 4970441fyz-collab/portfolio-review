@@ -1,41 +1,92 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
-export async function POST() {
-  return NextResponse.json({
-    score: 78,
-    sections: [
-      {
-        title: "Visual Hierarchy",
-        status: "Good",
-        feedback:
-          "Strong hero section. CTA is visible but secondary actions compete visually.",
-      },
-      {
-        title: "Layout & Spacing",
-        status: "Needs Improvement",
-        feedback:
-          "Overall structure is clear, but vertical rhythm between sections is inconsistent.",
-      },
-      {
-        title: "Typography",
-        status: "Good",
-        feedback:
-          "Clear heading hierarchy. Body text contrast could be improved.",
-      },
-      {
-        title: "Color & Contrast",
-        status: "Needs Improvement",
-        feedback:
-          "Primary gradient works well. Accessibility contrast needs refinement.",
-      },
-      {
-        title: "UX & Clarity",
-        status: "Good",
-        feedback:
-          "Navigation is intuitive, but action flow lacks feedback state.",
-      },
-    ],
-    summary:
-      "Mid-level portfolio with strong structure and clear positioning, but inconsistent visual system discipline.",
-  });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    const { imageBase64 } = await req.json();
+
+    if (!imageBase64) {
+      return NextResponse.json(
+        { error: "No image provided" },
+        { status: 400 }
+      );
+    }
+
+    const prompt = `You are a senior UX/UI design expert reviewing a designer's work.
+Analyze this design screenshot and return ONLY a valid JSON object with this exact structure:
+{
+  "score": <number 0-100>,
+  "sections": [
+    {
+      "title": "Visual Hierarchy",
+      "status": "Good" | "Needs Improvement",
+      "feedback": "<specific, actionable feedback 1-2 sentences>"
+    },
+    {
+      "title": "Layout & Spacing",
+      "status": "Good" | "Needs Improvement",
+      "feedback": "<specific, actionable feedback 1-2 sentences>"
+    },
+    {
+      "title": "Typography",
+      "status": "Good" | "Needs Improvement",
+      "feedback": "<specific, actionable feedback 1-2 sentences>"
+    },
+    {
+      "title": "Color & Contrast",
+      "status": "Good" | "Needs Improvement",
+      "feedback": "<specific, actionable feedback 1-2 sentences>"
+    },
+    {
+      "title": "UX & Clarity",
+      "status": "Good" | "Needs Improvement",
+      "feedback": "<specific, actionable feedback 1-2 sentences>"
+    }
+  ],
+  "summary": "<2-3 sentence overall assessment with key growth areas>"
+}
+
+Be specific to what you actually see in the image. Do not return anything except the JSON object.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      max_tokens: 1000,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: {
+                url: imageBase64,
+                detail: "high",
+              },
+            },
+            {
+              type: "text",
+              text: prompt,
+            },
+          ],
+        },
+      ],
+    });
+
+    const content = response.choices[0]?.message?.content ?? "";
+
+    // Strip markdown fences if present
+    const clean = content.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    return NextResponse.json(parsed);
+  } catch (err) {
+    console.error("Analysis error:", err);
+    return NextResponse.json(
+      { error: "Analysis failed. Please try again." },
+      { status: 500 }
+    );
+  }
 }
